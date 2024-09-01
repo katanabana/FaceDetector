@@ -1,6 +1,6 @@
-# Face Detector Project
+# Face Detector
 
-**Face Detector Project** is a Python-based tool that performs face detection in videos and identifies specific scenes where a given face appears.
+**Face Detector** is a Python-based tool that performs face detection in videos and identifies specific scenes where a given face appears.
 
 ## Features
 
