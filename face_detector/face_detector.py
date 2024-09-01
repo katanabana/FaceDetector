@@ -11,6 +11,20 @@ from scenedetect.detectors import ContentDetector
 from face_detector.custom_scene_manager import CustomSceneManager
 
 
+class InvalidFacesNumber(Exception):
+    def __init__(self, number_of_faces):
+        self.number_of_faces = number_of_faces
+        message = f"Verification image should be an image with exactly 1 face. " \
+                  "Provided image contains {number_of_faces} faces."
+        super().__init__(message)
+
+
+class FilesAlreadyExist(Exception):
+    def __init__(self, directory, file_names):
+        names = ',\n'.join(['"' + name + '"' for name in file_names])
+        super().__init__(f'The directory "{directory}" already contains:\n{names}')
+
+
 class FaceDetector:
     # Default parameters for face detection
     tolerance = 0.7  # Tolerance for face matching (lower means more strict)
@@ -28,7 +42,7 @@ class FaceDetector:
 
         # Ensure the verification image contains exactly one face
         if len(faces) != 1:
-            raise Exception("Verification image should be an image with 1 face.")
+            raise InvalidFacesNumber(len(faces))
 
         # Store the face encoding for later comparison
         self.verification_face = faces[0]
@@ -95,10 +109,15 @@ class FaceDetector:
         # Check if the output directory exists
         if os.path.exists(directory):
             # Check if the directory already contains relevant scene files
-            existing_files = [f for f in os.listdir(directory) if f.startswith("scene_") and f.endswith(".mp4")]
+
+            # Define a regular expression pattern to match the filenames
+            pattern = re.compile(r'^scene_\d+(_(temp|audio))?\.mp4$')
+
+            # List all files in the directory and filter those that match the pattern
+            existing_files = [f for f in os.listdir(directory) if pattern.match(f)]
+
             if existing_files:
-                files = ', '.join(['"' + f + '"' for f in existing_files])
-                raise Exception(f'The directory "{directory}" already contains: {files}')
+                raise FilesAlreadyExist(directory, existing_files)
 
         # Try to create the directory if it does not exist
         else:
