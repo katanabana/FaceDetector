@@ -1,9 +1,4 @@
 __pycache__/
-*.pyc
-.DS_Store
-*.log
-*.mp4
-*.jpg
 .venv/
 .idea/
 test/result/
