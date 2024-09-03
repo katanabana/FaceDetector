@@ -1,3 +1,4 @@
+import re
 import subprocess
 
 import cv2
@@ -26,10 +27,6 @@ class FilesAlreadyExist(Exception):
 
 
 class FaceDetector:
-    # Default parameters for face detection
-    tolerance = 0.7  # Tolerance for face matching (lower means more strict)
-    frequency = 5  # Frequency of frames to analyze within each scene
-    quality = 0.5  # Quality of frames to process (0.5 means 50% of original size)
 
     def __init__(self, video, verification_image, callback=lambda current, total: None):
         # Load the verification image and convert it to RGB format
@@ -74,20 +71,20 @@ class FaceDetector:
             yield start_frame / fps, self.frame_count / fps
             self.callback(self.frame_count, self.frame_count)
 
-    def relevant_scenes(self, tolerance=tolerance, frequency=frequency, quality=quality):
+    def relevant_scenes(self, tolerance=0.7, frequency=10, quality=0.5):
         # Iterate over detected scenes in the video
         for i, (start, end) in enumerate(self.scenes()):
             # Calculate the start and end frames
             start_frame = int(start * self.fps)
             end_frame = int(end * self.fps)
 
-            # Seek to the starting frame of the scene
-            self.video_cap.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
-
             # Process each frame within the scene
             frame_count = end_frame - start_frame
-            for frame_idx in range(0, frame_count, frequency):
-                # Read the next frame
+            for frame_idx in range(start_frame, end_frame, frequency):
+                # Seek to the frame specified by frame_idx
+                self.video_cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+
+                # Read the frame
                 ret, frame = self.video_cap.read()
                 if not ret:
                     break
@@ -105,7 +102,7 @@ class FaceDetector:
                         yield start, end
                         break  # Move to the next scene
 
-    def write(self, directory):
+    def write(self, scenes, directory):
         # Check if the output directory exists
         if os.path.exists(directory):
             # Check if the directory already contains relevant scene files
@@ -127,7 +124,7 @@ class FaceDetector:
         self.video_cap = cv2.VideoCapture(self.video_path)
 
         # Iterate over detected scenes where the face appears
-        for i, (start, end) in enumerate(self.relevant_scenes()):
+        for i, (start, end) in enumerate(scenes):
             # Calculate the start and end frames
             start_frame = int(start * self.fps)
             end_frame = int(end * self.fps)
