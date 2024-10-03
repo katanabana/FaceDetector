@@ -2,13 +2,15 @@ from scenedetect.scene_manager import *
 
 
 class CustomSceneManager(SceneManager):
-    def custom_detect_scenes(self,
-                             video: VideoStream = None,
-                             duration: Optional[FrameTimecode] = None,
-                             end_time: Optional[FrameTimecode] = None,
-                             frame_skip: int = 0,
-                             show_progress: bool = False,
-                             frame_source: Optional[VideoStream] = None):
+    def custom_detect_scenes(
+        self,
+        video: VideoStream = None,
+        duration: Optional[FrameTimecode] = None,
+        end_time: Optional[FrameTimecode] = None,
+        frame_skip: int = 0,
+        show_progress: bool = False,
+        frame_source: Optional[VideoStream] = None,
+    ):
         """Perform scene detection on the given video using the added SceneDetectors, returning the
         number of frames processed. Results can be obtained by calling :meth:`get_scene_list` or
         :meth:`get_cut_list`.
@@ -39,15 +41,17 @@ class CustomSceneManager(SceneManager):
         if frame_source is not None:
             video = frame_source
         if video is None:
-            raise TypeError("detect_scenes() missing 1 required positional argument: 'video'")
+            raise TypeError(
+                "detect_scenes() missing 1 required positional argument: 'video'"
+            )
         if frame_skip > 0 and self.stats_manager is not None:
-            raise ValueError('frame_skip must be 0 when using a StatsManager.')
+            raise ValueError("frame_skip must be 0 when using a StatsManager.")
         if duration is not None and end_time is not None:
-            raise ValueError('duration and end_time cannot be set at the same time!')
+            raise ValueError("duration and end_time cannot be set at the same time!")
         if duration is not None and isinstance(duration, (int, float)) and duration < 0:
-            raise ValueError('duration must be greater than or equal to 0!')
+            raise ValueError("duration must be greater than or equal to 0!")
         if end_time is not None and isinstance(end_time, (int, float)) and end_time < 0:
-            raise ValueError('end_time must be greater than or equal to 0!')
+            raise ValueError("end_time must be greater than or equal to 0!")
 
         self._base_timecode = video.base_timecode
 
@@ -63,9 +67,9 @@ class CustomSceneManager(SceneManager):
         total_frames = 0
         if video.duration is not None:
             if end_time is not None and end_time < video.duration:
-                total_frames = (end_time - start_frame_num)
+                total_frames = end_time - start_frame_num
             else:
-                total_frames = (video.duration.get_frames() - start_frame_num)
+                total_frames = video.duration.get_frames() - start_frame_num
 
         # Calculate the desired downscale factor and log the effective resolution.
         if self.auto_downscale:
@@ -73,15 +77,18 @@ class CustomSceneManager(SceneManager):
         else:
             downscale_factor = self.downscale
         if downscale_factor > 1:
-            logger.info('Downscale factor set to %d, effective resolution: %d x %d',
-                        downscale_factor, video.frame_size[0] // downscale_factor,
-                        video.frame_size[1] // downscale_factor)
+            logger.info(
+                "Downscale factor set to %d, effective resolution: %d x %d",
+                downscale_factor,
+                video.frame_size[0] // downscale_factor,
+                video.frame_size[1] // downscale_factor,
+            )
 
         progress_bar = None
         if show_progress:
             progress_bar = tqdm(
                 total=int(total_frames),
-                unit='frames',
+                unit="frames",
                 desc=PROGRESS_BAR_DESCRIPTION % 0,
                 dynamic_ncols=True,
             )
@@ -91,11 +98,12 @@ class CustomSceneManager(SceneManager):
         decode_thread = threading.Thread(
             target=SceneManager._decode_thread,
             args=(self, video, frame_skip, downscale_factor, end_time, frame_queue),
-            daemon=True)
+            daemon=True,
+        )
         decode_thread.start()
         frame_im = None
 
-        logger.info('Detecting scenes...')
+        logger.info("Detecting scenes...")
         while not self._stop.is_set():
             next_frame, position = frame_queue.get()
             if next_frame is None and position is None:
@@ -108,12 +116,15 @@ class CustomSceneManager(SceneManager):
             if progress_bar is not None:
                 if new_cuts:
                     progress_bar.set_description(
-                        PROGRESS_BAR_DESCRIPTION % len(self._cutting_list), refresh=False)
+                        PROGRESS_BAR_DESCRIPTION % len(self._cutting_list),
+                        refresh=False,
+                    )
                 progress_bar.update(1 + frame_skip)
 
         if progress_bar is not None:
             progress_bar.set_description(
-                PROGRESS_BAR_DESCRIPTION % len(self._cutting_list), refresh=True)
+                PROGRESS_BAR_DESCRIPTION % len(self._cutting_list), refresh=True
+            )
             progress_bar.close()
         # Unblock any puts in the decode thread before joining. This can happen if the main
         # processing thread stops before the decode thread.
@@ -127,9 +138,9 @@ class CustomSceneManager(SceneManager):
         self._last_pos = video.position
         self._post_process(video.position.frame_num)
 
-    def custom_process_frame(self,
-                             frame_num: int,
-                             frame_im: np.ndarray) -> [bool, int | None]:
+    def custom_process_frame(
+        self, frame_num: int, frame_im: np.ndarray
+    ) -> [bool, int | None]:
         """Add any cuts detected with the current frame to the cutting list. Returns True if any new
         cuts were detected, False otherwise."""
         new_cuts = False
@@ -138,7 +149,7 @@ class CustomSceneManager(SceneManager):
         self._frame_buffer.append(frame_im)
         # frame_buffer[-1] is current frame, -2 is one behind, etc.
         # so index based on cut frame should be [event_frame - (frame_num + 1)]
-        self._frame_buffer = self._frame_buffer[-(self._frame_buffer_size + 1):]
+        self._frame_buffer = self._frame_buffer[-(self._frame_buffer_size + 1) :]
         end = None
         for detector in self._detector_list:
             cuts = detector.process_frame(frame_num, frame_im)
