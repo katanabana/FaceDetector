@@ -54,10 +54,7 @@ face_detector.write(scenes, output_directory)
 
 To test the module with sample data:
 1. open terminal and navigate to the root directory of the cloned repository of this project
-2. run in terminal:
-```
-python -m example.example
-```
+2. run in terminal: `python -m example.example`
 3. check if in `example` was created a directory `result` containing ouput files of scenes from `example/video.mp4` where the face on `example/face.png` appears.
 
 ## Future Plans
